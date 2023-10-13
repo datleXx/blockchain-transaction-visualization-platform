@@ -37,11 +37,11 @@ export default function GraphEvents () {
 
           if (hoveredNode && !graph.extremities(edge).includes(hoveredNode)){
             newData.color = "#D3D3D3";
-            newData.size = 8;`1`
+            newData.size = 5;`1`
           }
           else if (hoveredNode && graph.extremities(edge).includes(hoveredNode)){
             newData.color = "#000033";
-            newData.size = 13;
+            newData.size = 7;
           }
           return newData;
         },

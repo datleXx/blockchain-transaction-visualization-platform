@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNodeContext } from '../Main/NodeContext';
-import neo4j, { graph } from 'neo4j-driver';
+import neo4j, { DateTime, graph } from 'neo4j-driver';
 import truncateAddress from '../Main/truncateAddress';
 import Tooltip from '@mui/material/Tooltip';
 import fetchTransactions from '../Main/backend/transactionFetch';
@@ -9,13 +9,17 @@ const driver = neo4j.driver('neo4j+s://c2eda242.databases.neo4j.io:7687', neo4j.
 const session = driver.session();
 
 const transfer_records = await session.run('MATCH (n:account {addressId : "0x8d08aad4b2bac2bb761ac4781cf62468c9ec47b4"})-[r1]->(t:transfer {from_address:"0x8d08aad4b2bac2bb761ac4781cf62468c9ec47b4"})-[r2]->(m:account {addressId: t.to_address}) RETURN t')
-
 export default function TransactionTable () {
     const { address, setAddress } = useNodeContext();
     const [transfers, setTransfers] = useState(transfer_records);
     const [timeLimit, setTimeLimit] = useState(false)
     const [message,setMessage] = useState("")
 
+    const TimeConverter = (timestamp) => {
+        const date = new Date(timestamp * 1000)
+
+        return date.toString()
+    }
     useEffect(() => {
         if (address != undefined) {
             try {
@@ -94,8 +98,23 @@ export default function TransactionTable () {
                                     {truncateAddress(transaction._fields[0].properties.hash)}
                                 </Tooltip>
                             </td>
+                            <td className="py-2 px-4 border-b border-gray-200 text-center">
+                                <Tooltip title={transaction._fields[0].properties.block_number} arrow>
+                                    {transaction._fields[0].properties.block_number}
+                                </Tooltip>
+                            </td>
+                            <td className="py-2 px-4 border-b border-gray-200 text-center">
+                                <Tooltip title={transaction._fields[0].properties.block_hash} arrow>
+                                    {truncateAddress(transaction._fields[0].properties.block_hash)}
+                                </Tooltip>
+                            </td>
+                            <td className="py-2 px-4 border-b border-gray-200 text-center">
+                                <Tooltip title={transaction._fields[0].properties.block_timestamp} arrow>
+                                    {TimeConverter(transaction._fields[0].properties.block_timestamp)}
+                                </Tooltip>
+                            </td>
                          
-                            <td className="py-2 px-4 border-b border-gray-200 text-center"></td>
+                            
                         </tr>
                     ))}
                 </tbody>

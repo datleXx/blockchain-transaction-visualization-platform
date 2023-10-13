@@ -18,10 +18,12 @@ import { useWorkerLayoutForce,
 LayoutForceControl} from "@react-sigma/layout-force";
 import { useLayoutRandom } from "@react-sigma/layout-random";
 import { useWorkerLayoutForceAtlas2, 
-LayoutForceAtlas2Control} from "@react-sigma/layout-forceatlas2";
+LayoutForceAtlas2Control,
+useLayoutForceAtlas2} from "@react-sigma/layout-forceatlas2";
 import { SearchControl } from "./SearchControl";
 import fetchData from "./backend/server";
-
+import forceAtlas2 from "graphology-layout-forceatlas2";
+import { assign } from "lodash";
 
 
 const driver = neo4j.driver('neo4j+s://c2eda242.databases.neo4j.io:7687', neo4j.auth.basic('neo4j', 'dat12345678'));
@@ -32,16 +34,14 @@ const rel_records = await session.run('MATCH (n:account {addressId : "0x8d08aad4
 const transfer_records = await session.run('MATCH (n:account {addressId : "0x8d08aad4b2bac2bb761ac4781cf62468c9ec47b4"})-[r1]->(t:transfer {from_address:"0x8d08aad4b2bac2bb761ac4781cf62468c9ec47b4"})-[r2]->(m:account {addressId: t.to_address}) RETURN t')
 
 const FA2 = () => {
-  const { start, kill, isRunning } = useWorkerLayoutForceAtlas2();
+  const { start, kill, isRunning } = useWorkerLayoutForceAtlas2({ settings: {slowDown:10, gravity:0}});
 
   useEffect(() => {
     start();
     return () => {
       kill();
-    };
-  }, [start, kill]);
-
-  return null;
+    }
+  }, [start,kill]);
 };
 
 const GraphComponent = () => {
@@ -110,15 +110,14 @@ const GraphComponent = () => {
       console.log("Error mapping: " + error)
     }
   },[nodes])
-  useEffect(() => {
-    console.log(rels)
-  },[rels])
 
   // Create graph circular 
   const RandomGraph = () => {
-    const { position, assign } = useLayoutRandom();
+    
+    const {position,assign} = useLayoutCircular()
     const loadGraph = useLoadGraph();
     const graph = new MultiDirectedGraph();
+    
     useEffect(() =>{
       if (node_records.records.length > 1){
         try {
@@ -129,7 +128,7 @@ const GraphComponent = () => {
                 label:truncateAddress(node._fields[0].properties.addressId), 
                 acctype: node._fields[0].properties.type, 
                 walletId: node._fields[0].properties.addressId, 
-                size:100, 
+                size:5, 
                 color:address == node._fields[0].properties.addressId? "rgb(255,247,0)" : "rgb(153,155,159)" 
                 })
               }
@@ -145,7 +144,7 @@ const GraphComponent = () => {
                  hash: transferNode._fields[0].properties.hash,
                  from: transferNode._fields[0].properties.from_address,
                  to:transferNode._fields[0].properties.to_address, 
-                 size:100, 
+                 size:10, 
                  color:"#B30095" 
                  })
             }
@@ -164,8 +163,9 @@ const GraphComponent = () => {
                     hash:rel.properties.hash, 
                     value:rel.properties.value, 
                     color: edgeColor(rel.properties.start,
-                      rel.properties.end)}
-                    )
+                      rel.properties.end),
+                    }
+                  )
                     }
                   }
                 )
@@ -180,18 +180,18 @@ const GraphComponent = () => {
           setTimeLimit(true)
         }
 
-        setTimeout(() => {
-          setTimeLimit(false); 
-        }, 3000)
-
       } else{
         if (!graph.hasNode(node_records.records[0]._fields[0].properties.addressId)){
           graph.addNode(node_records.records[0]._fields[0].properties.addressId, {x:0, y:0,label:truncateAddress(node_records.records[0]._fields[0].properties.addressId), acctype: node_records.records[0]._fields[0].properties.type, walletId: node_records.records[0]._fields[0].properties.addressId, size:10, color:address == node_records.records[0]._fields[0].elementId? "rgb(255,247,0)" : "rgb(153,155,159)" })
         }
       }
       loadGraph(graph);
-      assign();
+      assign()
     },[nodes])
+
+    setTimeout(() => {
+      setTimeLimit(false); 
+    }, 3000)
 
   }
  
@@ -206,7 +206,7 @@ const GraphComponent = () => {
                     <InfoTable/>
                 </div>
         
-                <SigmaContainer style={{height:"400px"}} graph={MultiDirectedGraph}>
+                <SigmaContainer style={{height:"400px"}}>
                   <DragNdrop/>
                   <GraphEvents/>
                   <RandomGraph/>
@@ -214,7 +214,6 @@ const GraphComponent = () => {
                   <ControlsContainer position={"bottom-left"}>
                     <ZoomControl/>
                     <FullScreenControl />
-                    <LayoutForceAtlas2Control/>
                   </ControlsContainer>
                     <SearchControl labels={{
                           text: "Search for a node",
