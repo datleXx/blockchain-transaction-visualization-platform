@@ -64,7 +64,7 @@ export default function TransactionTable () {
     return (
         <div className="overflow-x-auto mt-[100px]">
             <table className="min-w-full bg-white rounded-xl overflow-hidden table-responsive">
-                <thead>
+                <thead className=''>
                     <tr>
                         <th className="py-2 px-4 bg-blue-200 font-bold uppercase text-sm text-gray-600 border-b border-gray-200 responsive-header">Sender</th>
                         <th className="py-2 px-4 bg-blue-200 font-bold uppercase text-sm text-gray-600 border-b border-gray-200 responsive-header">Receiver</th>

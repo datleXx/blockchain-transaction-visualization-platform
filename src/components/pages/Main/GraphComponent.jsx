@@ -23,7 +23,6 @@ useLayoutForceAtlas2} from "@react-sigma/layout-forceatlas2";
 import { SearchControl } from "./SearchControl";
 import fetchData from "./backend/server";
 import forceAtlas2 from "graphology-layout-forceatlas2";
-import { assign } from "lodash";
 
 
 const driver = neo4j.driver('neo4j+s://c2eda242.databases.neo4j.io:7687', neo4j.auth.basic('neo4j', 'dat12345678'));
@@ -33,17 +32,6 @@ const node_records = await session.run('MATCH (n:account {addressId : "0x8d08aad
 const rel_records = await session.run('MATCH (n:account {addressId : "0x8d08aad4b2bac2bb761ac4781cf62468c9ec47b4"})-[r1]->(t:transfer {from_address:"0x8d08aad4b2bac2bb761ac4781cf62468c9ec47b4"})-[r2]->(m:account {addressId: t.to_address}) RETURN r1,r2')
 const transfer_records = await session.run('MATCH (n:account {addressId : "0x8d08aad4b2bac2bb761ac4781cf62468c9ec47b4"})-[r1]->(t:transfer {from_address:"0x8d08aad4b2bac2bb761ac4781cf62468c9ec47b4"})-[r2]->(m:account {addressId: t.to_address}) RETURN t')
 
-const FA2 = () => {
-  const { start, kill, isRunning } = useWorkerLayoutForceAtlas2({ settings: {slowDown:10, gravity:0}});
-
-  useEffect(() => {
-    start();
-    return () => {
-      kill();
-    }
-  }, [start,kill]);
-};
-
 const GraphComponent = () => {
   const {address,setAddress} = useNodeContext();
   const [nodes,setNodes] = useState(node_records); 
@@ -51,8 +39,7 @@ const GraphComponent = () => {
   const[transfers,setTransfers]= useState(transfer_records); 
   const [message,setMessage] = useState("");
   const [timeLimit, setTimeLimit] = useState(false)
-
-
+  const graph = new MultiDirectedGraph();
 
   const edgeColor = (StartNode,EndNode) => {
     let color; 
@@ -67,7 +54,7 @@ const GraphComponent = () => {
     }
     return color;
   }
-  
+
   useEffect(()=>{
     if (address != undefined) {
       try {
@@ -94,16 +81,19 @@ const GraphComponent = () => {
       nodes.records.map(node => {
         if (!node_records.records.includes(node)){
           node_records.records.push(node)
+          //nodes.records.splice(nodes.records.indexOf(node),1)
         }
       })
       rels.records.map(rel => {
         if (!rel_records.records.includes(rel)){
           rel_records.records.push(rel)
+          //rels.records.splice(rels.records.indexOf(rel),1)
         }
       })
       transfers.records.map(transfer => {
         if (!transfer_records.records.includes(transfer)){
           transfer_records.records.push(transfer)
+          //transfers.records.splice(transfers.records.indexOf(transfer),1)
         }
       })
     } catch(error) {
@@ -111,88 +101,102 @@ const GraphComponent = () => {
     }
   },[nodes])
 
+  useEffect(() => {
+    console.log(node_records)
+  },[node_records.records])
   // Create graph circular 
-  const RandomGraph = () => {
-    
+  const Graph = () => {
     const {position,assign} = useLayoutCircular()
     const loadGraph = useLoadGraph();
-    const graph = new MultiDirectedGraph();
-    
+    const { start,stop, kill, isRunning } = useWorkerLayoutForceAtlas2({ settings: {slowDown:10, gravity:0}});
     useEffect(() =>{
-      if (node_records.records.length > 1){
-        try {
-          node_records.records.map(node => {
-            if (!graph.hasNode(node._fields[0].properties.addressId)){
-              graph.addNode(node._fields[0].properties.addressId,
-               {x:0, y:0,
-                label:truncateAddress(node._fields[0].properties.addressId), 
-                acctype: node._fields[0].properties.type, 
-                walletId: node._fields[0].properties.addressId, 
-                size:5, 
-                color:address == node._fields[0].properties.addressId? "rgb(255,247,0)" : "rgb(153,155,159)" 
-                })
-              }
+    if (node_records.records.length > 1){
+      try {
+        node_records.records.map(node => {
+          if (!graph.hasNode(node._fields[0].properties.addressId)){
+            graph.addNode(node._fields[0].properties.addressId,
+             {x:0, y:0,
+              label:truncateAddress(node._fields[0].properties.addressId), 
+              acctype: node._fields[0].properties.type, 
+              walletId: node._fields[0].properties.addressId, 
+              size:5, 
+              color:address == node._fields[0].properties.addressId? "rgb(255,247,0)" : "rgb(153,155,159)" 
+              })
             }
-          )
-  
-          transfer_records.records.map(transferNode => {
-            if (!graph.hasNode(transferNode._fields[0].properties.hash)){
-              graph.addNode(transferNode._fields[0].properties.hash,
-                {x:0, y:0,
-                 label:truncateAddress(transferNode._fields[0].properties.hash), 
-                 value: transferNode._fields[0].properties.value, 
-                 hash: transferNode._fields[0].properties.hash,
-                 from: transferNode._fields[0].properties.from_address,
-                 to:transferNode._fields[0].properties.to_address, 
-                 size:10, 
-                 color:"#B30095" 
-                 })
-            }
-          })
-  
-          rel_records.records.map(relationship => 
-            {
-              relationship._fields.map(rel => {
-                if (!graph.hasEdge(rel.elementId)){
-                  graph.addEdgeWithKey(
-                    rel.elementId, 
-                    rel.properties.start , 
-                    rel.properties.end ,
-                    {type:'arrow',
-                    size:address == rel.properties.start? 4 : 2, 
-                    hash:rel.properties.hash, 
-                    value:rel.properties.value, 
-                    color: edgeColor(rel.properties.start,
-                      rel.properties.end),
-                    }
-                  )
-                    }
+          }
+        )
+
+        transfer_records.records.map(transferNode => {
+          if (!graph.hasNode(transferNode._fields[0].properties.hash)){
+            graph.addNode(transferNode._fields[0].properties.hash,
+              {x:0, y:0,
+               label:truncateAddress(transferNode._fields[0].properties.hash), 
+               value: transferNode._fields[0].properties.value, 
+               hash: transferNode._fields[0].properties.hash,
+               from: transferNode._fields[0].properties.from_address,
+               to:transferNode._fields[0].properties.to_address, 
+               size:5, 
+               color:"#B30095" 
+               })
+          }
+        })
+
+        rel_records.records.map(relationship => 
+          {
+            relationship._fields.map(rel => {
+              if (!graph.hasEdge(rel.elementId)){
+                graph.addEdgeWithKey(
+                  rel.elementId, 
+                  rel.properties.start , 
+                  rel.properties.end ,
+                  {type:'arrow',
+                  size:address == rel.properties.start? 4 : 2, 
+                  hash:rel.properties.hash, 
+                  value:rel.properties.value,
+                  start: rel.properties.start, 
+                  end: rel.properties.end ,
+                  from: rel.properties.from,
+                  to: rel.properties.to,
+                  color: edgeColor(rel.properties.from,
+                    rel.properties.to),
                   }
                 )
-              }
-            )
+                  }
+                }
+              )
+            }
+          )
 
-          setMessage("Nodes, Edges added successfully !")
-          setTimeLimit(true)
-        }
-        catch (error) {
-          setMessage("Unexpected errors:" + error)
-          setTimeLimit(true)
-        }
-
-      } else{
-        if (!graph.hasNode(node_records.records[0]._fields[0].properties.addressId)){
-          graph.addNode(node_records.records[0]._fields[0].properties.addressId, {x:0, y:0,label:truncateAddress(node_records.records[0]._fields[0].properties.addressId), acctype: node_records.records[0]._fields[0].properties.type, walletId: node_records.records[0]._fields[0].properties.addressId, size:10, color:address == node_records.records[0]._fields[0].elementId? "rgb(255,247,0)" : "rgb(153,155,159)" })
-        }
+        setMessage("Nodes, Edges added successfully !")
+        setTimeLimit(true)
       }
-      loadGraph(graph);
-      assign()
-    },[nodes])
+      catch (error) {
+        setMessage("Unexpected errors:" + error)
+        setTimeLimit(true)
+      }
+
+    } else{
+      if (!graph.hasNode(node_records.records[0]._fields[0].properties.addressId)){
+        graph.addNode(node_records.records[0]._fields[0].properties.addressId, {x:0, y:0,label:truncateAddress(node_records.records[0]._fields[0].properties.addressId), acctype: node_records.records[0]._fields[0].properties.type, walletId: node_records.records[0]._fields[0].properties.addressId, size:5, color:address == node_records.records[0]._fields[0].elementId? "rgb(255,247,0)" : "rgb(153,155,159)" })
+      }
+    }
 
     setTimeout(() => {
-      setTimeLimit(false); 
-    }, 3000)
+        setTimeLimit(false); 
+      }, 3000)
 
+    console.log(graph)
+
+    assign()
+  },[node_records, transfer_records, rel_records])
+
+    useEffect(() => {
+      loadGraph(graph)
+      start();
+      return () => {
+        kill();
+      }
+    }, [start,kill]);
   }
  
   
@@ -209,8 +213,7 @@ const GraphComponent = () => {
                 <SigmaContainer style={{height:"400px"}}>
                   <DragNdrop/>
                   <GraphEvents/>
-                  <RandomGraph/>
-                  <FA2/>
+                  <Graph/>
                   <ControlsContainer position={"bottom-left"}>
                     <ZoomControl/>
                     <FullScreenControl />

@@ -35,13 +35,21 @@ export default function GraphEvents () {
           const graph = sigma.getGraph();
           const newData = { ...data, hidden: false };
 
-          if (hoveredNode && !graph.extremities(edge).includes(hoveredNode)){
-            newData.color = "#D3D3D3";
-            newData.size = 5;`1`
-          }
-          else if (hoveredNode && graph.extremities(edge).includes(hoveredNode)){
-            newData.color = "#000033";
-            newData.size = 7;
+          if (hoveredNode != null){
+            
+            if (graph.getEdgeAttributes(edge).from == hoveredNode || graph.getEdgeAttributes(edge).to == hoveredNode){
+              // newData.color = "#000033";
+              //newData.size = 5;
+              newData.hidden = false; 
+            }
+            else if ((graph.getEdgeAttributes(edge).start == hoveredNode || graph.getEdgeAttributes(edge).end == hoveredNode) && (graph.getEdgeAttributes(edge).start != graph.getEdgeAttributes(edge).from || graph.getEdgeAttributes(edge).end != graph.getEdgeAttributes(edge).to)){
+              // newData.color = "#000033";
+              //newData.size = 5;
+              newData.hidden = false; 
+            }
+            else {
+              newData.hidden = true; 
+            }
           }
           return newData;
         },
@@ -59,6 +67,7 @@ export default function GraphEvents () {
           console.log(clicked)
           setAddress(clicked)
           setSelectedNode(clicked)
+          setHoveredNode(null)
         }
       });
     }, [registerEvents,address, selectedNode]);
