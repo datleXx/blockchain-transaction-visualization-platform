@@ -116,7 +116,7 @@ const GraphComponent = () => {
   const Graph = () => {
     const {position,assign} = useLayoutCircular()
     const loadGraph = useLoadGraph();
-    const { start,stop, kill, isRunning } = useWorkerLayoutForceAtlas2({ settings: {slowDown:10, gravity:0}});
+    const { start,stop, kill, isRunning } = useWorkerLayoutForceAtlas2({ settings: {slowDown:10, gravity:0, scalingRatio: 0.001}});
     useEffect(() =>{
     if (node_records.records.length > 1){
       try {
