@@ -6,18 +6,20 @@ import infoFetch from "./backend/infoFetch";
 import fetchBalance from "./backend/balanceFetch";
 
 const InfoTable = () => {
-    //set the clicked node prepare for displaying dat
-    const {address, setAddress} = useNodeContext();
+    //set the clicked node prepare for displaying data
+    const {address, setAddress} = useNodeContext(); //implement the context to get the address from other component
     const [node, setNode] = useState()
+    //these usestates is use to check if a node is clicked or not, and if that node is an account node or a transfer node
     const [nodeClicked, setNodeClicked] = useState(false)
     const [accountNode, setAccountNode] = useState(false)
+    //this useState used to store the fetched balance from etherium node
     const [balance, setBalance] = useState(); 
 
     useEffect(() => { 
         if (address != undefined) {
             try {
                 const result = infoFetch(address)
-                .then(result => {
+                .then(result => {                   // this useEffect will use the infoFetch from backend folder to get the node's data
                     setNode(result)
                     setNodeClicked(true)
                 } )
@@ -30,7 +32,7 @@ const InfoTable = () => {
                 try {
                     const result = fetchBalance(address)
                     .then(result => {
-                        setBalance(result.toString())
+                        setBalance(result.toString()) //retrieve the balance of the node being fetched using etherium node
                     } )
 
                 }
@@ -46,7 +48,7 @@ const InfoTable = () => {
             if (node.records[0]._fields[0].labels[0] == "account"){ 
                 setAccountNode(true)
             }
-            else {
+            else {                          //logic to check if the node is an account or a transfer node
                 setAccountNode(false)
             }
         }
@@ -54,8 +56,8 @@ const InfoTable = () => {
 
     const [click, setClick] = useState(false)
     const handleClick =() =>
-    {
-        setClick(!click)
+    {           
+        setClick(!click)            //set the state of the arrow icon, 
     }
 
     

@@ -24,7 +24,7 @@ import { SearchControl } from "./SearchControl";
 import fetchData from "./backend/server";
 import forceAtlas2 from "graphology-layout-forceatlas2";
 
-
+//initial data, after this data will be fetched using the backend function
 const driver = neo4j.driver('neo4j+s://c2eda242.databases.neo4j.io:7687', neo4j.auth.basic('neo4j', 'dat12345678'));
 const session = driver.session();
 
@@ -33,14 +33,18 @@ const rel_records = await session.run('MATCH (n:account {addressId : "0x8d08aad4
 const transfer_records = await session.run('MATCH (n:account {addressId : "0x8d08aad4b2bac2bb761ac4781cf62468c9ec47b4"})-[r1]->(t:transfer {from_address:"0x8d08aad4b2bac2bb761ac4781cf62468c9ec47b4"})-[r2]->(m:account {addressId: t.to_address}) RETURN t')
 
 const GraphComponent = () => {
+  //the address context used to store the address of the clicked node
   const {address,setAddress} = useNodeContext();
+  //these 3 following useStates is used to store the fetched data
   const [nodes,setNodes] = useState(node_records); 
   const[rels,setRels] = useState(rel_records);
   const[transfers,setTransfers]= useState(transfer_records); 
+  //this useState is used to display the message, improving user friendly
   const [message,setMessage] = useState("");
   const [timeLimit, setTimeLimit] = useState(false)
   const graph = new MultiDirectedGraph();
 
+  //function to set the color of the edge that will be used later on
   const edgeColor = (StartNode,EndNode) => {
     let color; 
     if (address == StartNode){ 
@@ -55,6 +59,9 @@ const GraphComponent = () => {
     return color;
   }
 
+  //whenever a node is clicked, the address changes, 
+  //this use effect will be triggered to fetch data from the server
+  //using the fetchData backend function
   useEffect(()=>{
     if (address != undefined) {
       try {
@@ -76,6 +83,9 @@ const GraphComponent = () => {
     }
   },[address])
 
+  //after the data is fetched
+  //this useEffect hook will be triggered to loaded the fetched data into the array of nodes, edges and transfers
+  //that will be used to load into the graph
   useEffect(()=> {
     try {
       nodes.records.map(node => {
@@ -101,10 +111,8 @@ const GraphComponent = () => {
     }
   },[nodes])
 
-  useEffect(() => {
-    console.log(node_records)
-  },[node_records.records])
-  // Create graph circular 
+
+  // Create a graph with layout
   const Graph = () => {
     const {position,assign} = useLayoutCircular()
     const loadGraph = useLoadGraph();
@@ -112,6 +120,8 @@ const GraphComponent = () => {
     useEffect(() =>{
     if (node_records.records.length > 1){
       try {
+
+        //loop through the list of node, check if the node exist in the graph, then load it into the graph
         node_records.records.map(node => {
           if (!graph.hasNode(node._fields[0].properties.addressId)){
             graph.addNode(node._fields[0].properties.addressId,
@@ -125,7 +135,8 @@ const GraphComponent = () => {
             }
           }
         )
-
+        
+        //loop through the list of transfer nodes, check if the node exist in the graph, then load it into the graph
         transfer_records.records.map(transferNode => {
           if (!graph.hasNode(transferNode._fields[0].properties.hash)){
             graph.addNode(transferNode._fields[0].properties.hash,
@@ -141,6 +152,7 @@ const GraphComponent = () => {
           }
         })
 
+        //loop through the list of edges, check if the edge exist in the graph, then load it into the graph
         rel_records.records.map(relationship => 
           {
             relationship._fields.map(rel => {
@@ -166,7 +178,8 @@ const GraphComponent = () => {
               )
             }
           )
-
+        
+        //set the message to displayed on to the screen 
         setMessage("Nodes, Edges added successfully !")
         setTimeLimit(true)
       }
@@ -181,6 +194,7 @@ const GraphComponent = () => {
       }
     }
 
+    //set the limit of the displayed message to 3 secs
     setTimeout(() => {
         setTimeLimit(false); 
       }, 3000)
@@ -190,13 +204,14 @@ const GraphComponent = () => {
     assign()
   },[node_records, transfer_records, rel_records])
 
-    useEffect(() => {
-      loadGraph(graph)
-      start();
-      return () => {
-        kill();
-      }
-    }, [start,kill]);
+  //start the layout when the component mounts and kill the layout when the component unmounts
+  useEffect(() => {
+    loadGraph(graph)
+    start();
+    return () => {
+      kill();
+    }
+  }, [start,kill]);
   }
  
   

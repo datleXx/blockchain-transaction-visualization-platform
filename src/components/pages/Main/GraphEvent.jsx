@@ -22,7 +22,8 @@ export default function GraphEvents () {
           const newData = { ...data, highlighted: data.highlighted}
 
           if (selectedNode){
-            if (node == selectedNode || graph.neighbors(selectedNode).includes(node)){
+            //this will highlight the selected node
+            if (node == selectedNode){
               newData.highlighted = true
             }
             else{
@@ -31,12 +32,13 @@ export default function GraphEvents () {
           }
           return newData
         },
+        //setting for edge when a node is hovered but not clicked
         edgeReducer: (edge, data) => {
           const graph = sigma.getGraph();
           const newData = { ...data, hidden: false };
 
           if (hoveredNode != null){
-            
+            //if the edge source or end node address equal to the hovered node address --> bold the connection otherwise will be hidden
             if (graph.getEdgeAttributes(edge).from == hoveredNode || graph.getEdgeAttributes(edge).to == hoveredNode){
               // newData.color = "#000033";
               //newData.size = 5;
@@ -59,8 +61,8 @@ export default function GraphEvents () {
     useEffect(() => {
       // Register the events
       registerEvents({
-        enterNode: (event) => setHoveredNode(event.node),
-        leaveNode: () => setHoveredNode(null),
+        enterNode: (event) => setHoveredNode(event.node), //when the mouse enter a node --> set the hovered node to be that node
+        leaveNode: () => setHoveredNode(null), // when the mouse leave that hovered node --> set the hovered node to be null
         clickNode: (event) => 
         {
           const clicked = event.node

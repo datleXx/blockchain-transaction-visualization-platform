@@ -1,6 +1,6 @@
 import Web3 from "web3";
 
-
+//etherium node API
 const web3 = new Web3("https://mainnet.infura.io/v3/6725306487624c2e8da91c6f255f7865"); 
 
 const fetchBalance = async (address: string) => {

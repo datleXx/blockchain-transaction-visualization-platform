@@ -15,21 +15,22 @@ export default function TransactionTable () {
     const [timeLimit, setTimeLimit] = useState(false)
     const [message,setMessage] = useState("")
 
+    //this function will convert the Unix code into real time 
     const TimeConverter = (timestamp) => {
         const date = new Date(timestamp * 1000)
 
         return date.toString()
     }
+    //**This useEffect will be trigger when the address is changed, to fetch the corresponding transaction attached to that node */
     useEffect(() => {
         if (address != undefined) {
             try {
-                const result = fetchTransactions(address)
+                const result = fetchTransactions(address)       //backend implementation
                 .then(result => {
                     if (result.records.length != 0) {
-                        setTransfers(result)
+                        setTransfers(result)    //store the result in the transfer variable
                     }
                 })
-                console.log(result)
             }
             catch (error) {
                 setMessage("Unexpected Error:", error)
@@ -42,6 +43,7 @@ export default function TransactionTable () {
         }
     }, [address])
 
+    //**This useEffect will store the fetched data into a transfer_records variable, this variable will be used to display the transaction */
     useEffect(() => {
         try {
             transfers.records.map(transfer => {
